@@ -1,0 +1,1170 @@
+---
+title: "Member Report"
+author: "Liam McCann"
+date: "12/08/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, error = FALSE, warning = FALSE, message = FALSE )
+```
+
+```{r}
+require(tidyverse)
+require(formattable)
+require(ggplot2)
+require(readxl)
+require(knitr)
+require(RColorBrewer)
+require(stringr)
+setwd("/Users/liammccann/Desktop/Root/Work/BCEDA")
+```
+
+```{r}
+df <- read_excel("MemberSurvey.xlsx")
+```
+
+```{r}
+EconomicRegion <- df[, 1] %>% 
+  group_by_at(1) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  rename(`Economic Region` = `Which economic region do you belong to?*`)
+```
+
+```{r}
+EconomicRegion$`Economic Region` <- factor(EconomicRegion$`Economic Region`, levels = 
+                                       arrange(EconomicRegion,
+                                               `Response Percent`)$`Economic Region`)
+
+ggplot(EconomicRegion, aes(`Economic Region`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.30)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+  ylab("Response Percent") +  xlab("")
+
+ggsave("2.1.png", height = 4, width = 8)
+```
+
+```{r}
+CurrentPosition <- df[, 12] %>% 
+  group_by_at(1) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  rename(`Position` = `What one option best matches your current position within your organization?`)
+```
+
+```{r}
+CurrentPosition$`Position` <- factor(CurrentPosition$`Position`, levels = 
+                                       arrange(CurrentPosition,
+                                               `Response Percent`)$`Position`)
+
+ggplot(CurrentPosition, aes(`Position`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.7)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+  ylab("Response Percent") +  xlab("")
+
+ggsave("3.1.png", height = 4, width = 8)
+```
+
+```{r}
+blank_theme <- theme_minimal()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.border = element_blank(),
+    panel.grid=element_blank(),
+    axis.ticks = element_blank(),
+    plot.title=element_text(face="bold")
+  )
+```
+
+```{r}
+DecisionMaker <- df[, 11] %>% 
+  group_by_at(1) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  rename(`Answer` = `Are you the primary decision maker for your economic development department/organization?`) %>%
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`)
+```
+
+```{r}
+DecisionMaker$Answer <- factor(DecisionMaker$Answer, levels = c("Yes", "No"))
+
+ggplot(DecisionMaker, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("3.2.png", height = 4, width = 8)
+```
+
+```{r}
+YearsExperience <- df[, 14] %>% 
+  group_by_at(1) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  rename(`Years` = `How many years have you been in your current position?`)
+```
+
+```{r}
+YearsExperience$Years <- factor(YearsExperience$Years, levels = c("Less than 1", "1 to 2",
+                                                                  "3 to 4", "5 to 9", "10 to 14",
+                                                                  "15 to 19", "20 to 24"))
+
+ggplot(YearsExperience, aes(x = Years, y = `Response Percent`)) + 
+  geom_col(fill = "#88c543") + scale_y_continuous(labels = scales::percent, limits = c(0, .3)) + 
+  labs(x = "Years in Current Position") + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), size = 4.5, vjust = -0.4) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text = element_text(size = 12))
+
+ggsave("3.3.png", height = 4, width = 8)  
+```
+
+```{r}
+Fulltime <- df[, 15] %>% 
+  group_by_at(1) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  rename(`Answer` = `Is your position full time (35 hours or more per week)?`) %>%
+  filter(!is.na(Answer)) %>% 
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`) %>% 
+  arrange(desc(`Response Percent`))
+```
+
+```{r}
+Fulltime$Answer <- factor(Fulltime$Answer, levels = c("Yes", "No"))
+
+ggplot(Fulltime, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("3.4.png", height = 4, width = 8)
+```
+
+```{r}
+Supervision <- df[, 16] %>% 
+  group_by_at(1) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  rename(`People` = `How many people do you directly or indirectly supervise (if any)?`)
+```
+
+```{r}
+Supervision$People <- factor(Supervision$People, levels = c("None", "1", "2",
+                                                            "3 to 4", "5 to 9", "10 or more"))
+
+ggplot(Supervision, aes(x = People, y = `Response Percent`)) + 
+  geom_col(fill = "#88c543") + scale_y_continuous(labels = scales::percent, limits = c(0, .4)) + 
+  labs(x = "People Supervised") + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), size = 4.5, vjust = -0.4) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text = element_text(size = 12))
+
+ggsave("3.5.png", height = 4, width = 8)  
+  
+```
+```{r}
+Salary <- df[, 17] %>% 
+  rename(`Salary` = `As of January 1 of this year what was your annual base salary? This question is confidential but very important.`) %>% 
+  filter(!is.na(Salary))
+```
+
+```{r}
+ks <- function (x) { scales::number_format(accuracy = 1,
+                                   scale = 1/1000,
+                                   suffix = "k",
+                                   big.mark = ",")(x) }
+```
+
+```{r}
+AvSal <- round(mean(Salary$Salary), digits = 2)
+
+
+ggplot(Salary, aes(Salary)) + 
+  geom_density(color = "black", fill="#88c543") +
+  theme_bw() + scale_x_continuous(breaks = scales::breaks_extended(15),labels = ks) + 
+  geom_vline(xintercept = AvSal, size = 1.5, color = "black") +
+    theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text = element_text(size = 12),
+        axis.text.y = element_blank()) + xlab("Salary ($CAD)")+ ylab("") +
+  geom_text(aes(AvSal, 0.000015, label = scales::dollar(AvSal), hjust = -0.2), color = "black", size = 4.7)
+
+ggsave("4.1.png", height = 4, width = 8) 
+```
+
+```{r}
+SalaryByPop <- df[, c(17,9)] %>% 
+  rename(`Salary` = `As of January 1 of this year what was your annual base salary? This question is confidential but very important.`,
+         `Population` = `What is the population range of the population you serve?`) %>% 
+  filter(!is.na(Salary))
+```
+
+```{r}
+SalaryByPop <- SalaryByPop %>% 
+  mutate(Grouped = as.factor(
+    ifelse(Population %in% c("1-1,000", "1,001-5,000", "5,001-10,000"),
+           "10,000 or Less",
+           ifelse(Population %in% c("10,001-25,000"),
+                  "10,001-25,000",
+                  ifelse(Population %in% c("25,000-50,000"),
+                         "25,001-50,000",
+                         ifelse(Population %in% c("50,001-100,000", "100,001-250,000",
+                                                  "250,001+"),
+                                "Over 50,000",
+                                ""))))
+  )) %>% 
+  group_by(Grouped) %>% 
+  summarise(AVG = mean(Salary))
+```
+
+
+```{r}
+
+ggplot(SalaryByPop, aes(Grouped, AVG)) + geom_col(fill = "#88c543") + 
+  scale_y_continuous(labels = ks, limits = c(0,120000)) + theme_bw() + 
+  geom_text(aes(label = scales::dollar(AVG)), vjust = -0.4, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text = element_text(size = 12)) + ylab("Average Salary ($CAD)") +xlab("Population")
+
+ggsave("4.1.png", height = 4, width = 8)
+```
+```{r}
+AdjustedSal <- df[, 18] %>% 
+  group_by_at(1) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  rename(`Answer` = `Is your salary is adjusted on an annual basis?`) %>%
+  filter(!is.na(Answer)) %>% 
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`) %>% 
+  arrange(desc(`Response Percent`))
+```
+
+```{r}
+AdjustedSal$Answer <- factor(AdjustedSal$Answer, levels = c("Yes", "No"))
+
+ggplot(AdjustedSal, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("4.2.png", height = 4, width = 8)
+```
+
+```{r}
+SalaryChange <- df[, 19] %>% 
+  rename(
+    `Answer` = `Compared to one year previous, how has that base salary changed (if at all)?`) %>% 
+  filter(!is.na(Answer),
+         Answer != "Not applicable, not employed in your current position one year previously") %>% 
+  group_by(Answer) %>% 
+  summarise(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  arrange(`Response Percent`) %>% 
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`)
+```
+
+```{r}
+SalaryChange$Answer<- factor(SalaryChange$Answer, levels = c("Increased", "No change"))
+
+ggplot(SalaryChange, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("4.3.png", height = 4, width = 8)
+```
+
+
+```{r}
+break_list <- function(x){
+  BracketsLoc <- str_locate(x, " \\(.*\\)")
+  
+  if(!is.na(BracketsLoc[[1,1]])){
+    str_sub(x, BracketsLoc[[1,1]], BracketsLoc[[1,2]]) <- ""
+  }
+  
+  CompForms <- str_split(x, ", ")
+  return(CompForms)
+}
+```
+
+
+```{r}
+OtherComp <- df[, 20]
+
+Responses <- list()
+
+for(i in OtherComp[[1]]){
+  Comps <- break_list(i)[[1]]
+  for(comp in Comps){
+    if(!(comp %in% names(Responses))){
+      Responses[[comp]] <- 0
+    }
+    
+    Responses[[comp]] <- Responses[[comp]] + 1
+  }
+}
+
+CompResponses <- data.frame(Compensation = names(Responses[-1]), Freq = unlist(Responses[-1], use.names=FALSE)) %>% 
+  mutate(`Response Percent` = percent(Freq/nrow(OtherComp))) %>% 
+  arrange(desc(`Response Percent`))
+```
+
+```{r}
+CompResponses$Compensation <- factor(CompResponses$Compensation, levels = 
+                                       arrange(CompResponses, `Response Percent`)$Compensation)
+
+ggplot(CompResponses, aes(`Compensation`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,1)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+  ylab("Response Percent") +  xlab("")
+
+ggsave("4.4.png", height = 4, width = 8)
+```
+
+```{r}
+PensionType <- df[, 22] %>% 
+  rename(`Retirement Plan` = `What best describes the type of retirement plan your employer offers (whether you make use of it or not)?`) %>% 
+  replace_na(list(`Retirement Plan`="Other")) %>% 
+  group_by(`Retirement Plan`) %>%
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1))
+
+PensionType$`Retirement Plan`[2] <- "No Retirement Plan"
+```
+
+```{r}
+PensionType$`Retirement Plan` <- factor(PensionType$`Retirement Plan`, levels = 
+                                       arrange(PensionType, `Response Percent`)$`Retirement Plan`)
+
+ggplot(PensionType, aes(`Retirement Plan`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.8)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+  ylab("Response Percent") +  xlab("")
+
+ggsave("4.5.png", height = 4, width = 8)
+```
+
+```{r}
+VacationTime <- df[, 24] %>% 
+  rename(`Weeks` = `On an annual basis, how many weeks of paid vacation do you qualify for?`) %>%
+  replace_na(list(`Weeks`="None")) %>% 
+  group_by(`Weeks`) %>%
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1))
+
+
+```
+
+```{r}
+VacationTime$Weeks <- factor(VacationTime$Weeks, levels = c("None", "2", "3", "4", "5", "6",
+                                                            "7 or more"))
+
+ggplot(VacationTime, aes(x = Weeks, y = `Response Percent`)) + 
+  geom_col(fill = "#88c543") + scale_y_continuous(labels = scales::percent, limits = c(0, .4)) + 
+  labs(x = "Weeks of Paid Vacation") + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), size = 4.5, vjust = -0.4) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text = element_text(size = 12))
+
+ggsave("4.6.png", height = 4, width = 8)
+```
+
+```{r}
+RemoteWork <- df[, 25] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Does your organization allow for remote working?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`)
+```
+
+```{r}
+RemoteWork$Answer <- factor(RemoteWork$Answer, levels = c("Yes", "No"))
+
+ggplot(RemoteWork, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("4.7.png", height = 4, width = 8)
+```
+
+```{r}
+
+OrgType <- df[, 2] %>% 
+  rename(`Organization Type` = `Which one option best describes the type of organization you work for?`) %>% 
+  filter(!is.na(`Organization Type`)) %>% 
+  group_by(`Organization Type`) %>%
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1))
+
+OrgType[1,1] <- "Arms-length Economic Development Organization"
+OrgType[2,1] <- "Chamber of Commerce"
+```
+
+```{r}
+OrgType$`Organization Type` <- factor(OrgType$`Organization Type`, levels = 
+                                       arrange(OrgType, `Response Percent`)$`Organization Type`)
+
+ggplot(OrgType, aes(`Organization Type`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.7)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+ ylab("Response Percent") +  xlab("")
+
+ggsave("5.1.png", height = 4, width = 8)
+```
+
+```{r}
+AvgPop <- mean(na.omit(df[,10])[[1]])
+
+Pop <- df[, 9] %>% 
+  rename(`Population` = `What is the population range of the population you serve?`) %>%
+  group_by(Population) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1))
+
+Pop$Population <- c("1 - 1,000", "1,001 - 5,000", 
+                    "10,001 - 25,000", "100,001 - 250,000", "25,000 - 50,000", "250,001+",
+                    "5,001 - 10,000", "50,001 - 100,000"
+                     )
+
+Pop$Population <- factor(Pop$Population, levels = c("1 - 1,000", "1,001 - 5,000", "5,001 - 10,000",
+                    "10,001 - 25,000", "25,000 - 50,000",
+                    "50,001 - 100,000", "100,001 - 250,000",
+                     "250,001+"))
+
+```
+
+```{r}
+
+ggplot(Pop, aes(x = Population, y = `Response Percent`)) + 
+  geom_col(fill = "#88c543") + scale_y_continuous(labels = scales::percent, limits = c(0, .4)) + 
+  labs(x = "Population") + theme_bw() + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
+  geom_text(aes(label = `Response Percent`), size = 4.5, vjust = -0.4) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text = element_text(size = 11))
+
+ggsave("5.2.png", height = 4, width = 8)
+```
+
+```{r}
+FulltimeEmp <- df[, 4] %>% 
+  rename(`Staff` = `How many full-time staff or full-time equivalencies (FTEs) (Including contract staff) does your organization devote to economic development?`) %>%
+  filter(!is.na(Staff),
+         Staff != "Don’t know/Not applicable") %>% 
+  group_by(`Staff`) %>%
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1))
+
+FulltimeEmp[1,1] <- "1–2"
+FulltimeEmp[2,1] <- "2–4"
+
+FulltimeEmp$Staff <- factor(FulltimeEmp$Staff, levels = c("Less than 1", "1–2", "2–4",
+                                                           "Greater than 4"))
+```
+
+```{r}
+FulltimeEmp$Staff <- factor(FulltimeEmp$Staff, levels = c("Less than 1", "1–2", "2–4",
+                                                           "Greater than 4"))
+
+ggplot(FulltimeEmp, aes(x = Staff, y = `Response Percent`)) + 
+  geom_col(fill = "#88c543") + scale_y_continuous(labels = scales::percent, limits = c(0, .4)) + 
+  labs(x = "Full-Time Employees") + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), size = 4.5, vjust = -0.4) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text = element_text(size = 12))
+
+ggsave("5.3.png", height = 4, width = 8)
+```
+
+```{r}
+ParttimeEmp <- df[, 5] %>% 
+  rename(`Staff` = `How many part-time staff (Including contract staff) does your organization devote to economic development?`) %>%
+  filter(!is.na(Staff),
+         Staff != "Don’t know/Not applicable") %>% 
+  group_by(`Staff`) %>%
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1))
+```
+
+```{r}
+ParttimeEmp$Staff <- factor(ParttimeEmp$Staff, levels = c("Less than 1", "1 – 2", "Greater than 2"))
+
+ggplot(ParttimeEmp, aes(x = Staff, y = `Response Percent`)) + 
+  geom_col(fill = "#88c543") + scale_y_continuous(labels = scales::percent, limits = c(0, .6)) + 
+  labs(x = "Full-Time Employees") + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), size = 4.5, vjust = -0.4) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text = element_text(size = 12))
+
+ggsave("5.4.png", height = 4, width = 8)
+```
+
+```{r}
+TourismResp <- df[, 6] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Is your organization responsible for the community’s Tourism programs?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`)
+```
+
+```{r}
+TourismResp$Answer <- factor(TourismResp$Answer, levels = c("Yes", "No"))
+
+ggplot(TourismResp, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("5.5.png", height = 4, width = 8)
+```
+
+```{r}
+TourismStaff <- select(df, 6:8) 
+
+names(TourismStaff) <- c("YN", "Full Time", "Part Time")
+
+TourismStaff <- TourismStaff %>% 
+  filter(`YN` == "Yes") %>% 
+  replace_na(list(`Full Time`=0, `Part Time` = 0))
+
+AvgFT <- mean(TourismStaff$`Full Time`)
+AvgPT <- mean(TourismStaff$`Part Time`)
+```
+
+```{r}
+Budget <- df[, 26] %>% 
+  rename(`Budget` = `Approximately what is your organization's economic development related department or operation's annual operating budget? (DO NOT Include funds used for tourism.)`) %>% 
+  filter(!is.na(Budget))
+
+AvBud <- round(mean(Budget$Budget), digits = 2)
+```
+
+
+```{r}
+ms <- function (x) { scales::number_format(accuracy = 1,
+                                   scale = 1/1000000,
+                                   suffix = "M",
+                                   big.mark = ",")(x) }
+```
+
+```{r}
+BudgetByPop <- df[, c(9,26)] %>% 
+  rename(`Budget` = `Approximately what is your organization's economic development related department or operation's annual operating budget? (DO NOT Include funds used for tourism.)`,
+         `Population` = `What is the population range of the population you serve?`) %>% 
+  filter(!is.na(Budget))
+```
+
+```{r}
+BudgetByPop <- BudgetByPop %>% 
+  mutate(Grouped = as.factor(
+    ifelse(Population %in% c("1-1,000", "1,001-5,000", "5,001-10,000"),
+           "10,000 or Less",
+           ifelse(Population %in% c("10,001-25,000"),
+                  "10,001-25,000",
+                  ifelse(Population %in% c("25,000-50,000"),
+                         "25,001-50,000",
+                         ifelse(Population %in% c("50,001-100,000", "100,001-250,000",
+                                                  "250,001+"),
+                                "Over 50,000",
+                                ""))))
+  )) %>% 
+  group_by(Grouped) %>% 
+  summarise(AVG = mean(Budget))
+```
+
+```{r}
+ggplot(BudgetByPop, aes(Grouped, AVG)) + geom_col(fill = "#88c543") + 
+  scale_y_continuous(labels = ks, limits = c(0,950000)) + theme_bw() + 
+  geom_text(aes(label = scales::dollar(AVG)), vjust = -0.4, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text = element_text(size = 12)) + ylab("Average Annual Budget ($CAD)") +xlab("Population")
+
+ggsave("6.1.png", height = 4, width = 8)
+```
+
+
+```{r}
+IncomeSrc <- df[, 27:32] 
+names(IncomeSrc) <- c("Local/Regional/FN Gov't", "Provincial", "Federal", "Private Funds",
+                      "Fee for Service/Leveraged", "Other")
+IncomeSrc <- IncomeSrc %>% 
+  pivot_longer(cols = names(IncomeSrc)) %>% 
+  replace_na(list(value = 0)) %>% 
+  mutate(value = percent(as.numeric(sub("%", "", value))/100)) %>% 
+  group_by(name) %>% 
+  summarise(AVG = mean(value)) %>% 
+  rename(`Percent of Budget` = AVG,
+         `Source` = name)
+```
+
+```{r}
+IncomeSrc$`Source` <- factor(IncomeSrc$`Source`, levels = 
+                                       arrange(IncomeSrc, `Percent of Budget`)$`Source`)
+
+ggplot(IncomeSrc, aes(`Source`, `Percent of Budget`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.9)) + theme_bw() + 
+  geom_text(aes(label = `Percent of Budget`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+ ylab("Response Average") +  xlab("")
+
+ggsave("6.2.png", height = 4, width = 8)
+```
+
+```{r}
+AvgTourBud <- mean(df[, 33])
+
+TourBud <- df[, 34:41] 
+names(TourBud) <- c("Local/Regional/FN Gov't", "Provincial", "Federal", "MRDT", "Private Funds", "Membership", "Fee for Service/Leveraged", "Other")
+TourBud <- TourBud %>% 
+  filter(!(is.na(`Local/Regional/FN Gov't`) & is.na(`Provincial`) & is.na(`Federal`) & 
+           is.na(`MRDT`) & is.na(`Private Funds`) & is.na(`Membership`) & 
+           is.na(`Fee for Service/Leveraged`) & is.na(`Other`))) %>% 
+  pivot_longer(cols = names(TourBud)) %>% 
+  replace_na(list(value = 0)) %>% 
+  mutate(value = percent(as.numeric(sub("%", "", value))/100)) %>% 
+  group_by(name) %>% 
+  summarise(AVG = mean(value)) %>% 
+  rename(`Percent of Budget` = AVG,
+         `Source` = name)
+```
+```{r}
+TourBud$`Source` <- factor(TourBud$`Source`, levels = 
+                                       arrange(TourBud, `Percent of Budget`)$`Source`)
+
+ggplot(TourBud, aes(`Source`, `Percent of Budget`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.6)) + theme_bw() + 
+  geom_text(aes(label = `Percent of Budget`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+ ylab("Response Average") +  xlab("")
+
+ggsave("6.3.png", height = 4, width = 8)
+```
+
+```{r}
+IntBarriers <- df[, 42] %>% 
+  na.omit()
+
+Responses_2 <- list()
+
+for(i in IntBarriers[[1]]){
+  Bars <- break_list(i)[[1]]
+  for(bar in Bars){
+    if(!(bar %in% names(Responses_2))){
+      Responses_2[[bar]] <- 0
+    }
+    
+    Responses_2[[bar]] <- Responses_2[[bar]] + 1
+  }
+}
+
+IntResp <- data.frame(Barrier = names(Responses_2[-1]), Freq = unlist(Responses_2[-1], use.names=FALSE)) %>% 
+  mutate(`Response Percent` = percent(Freq/nrow(IntBarriers))) %>% 
+  arrange(desc(`Response Percent`))
+
+IntResp$Barrier[2] <- "Lack of understanding amongst Council and other Organization staff"
+IntResp$Barrier[3] <- "Lack of formal economic development plans/mandate"
+```
+
+```{r}
+IntResp$Barrier <- factor(IntResp$Barrier, levels = 
+                                       arrange(IntResp, `Response Percent`)$Barrier)
+
+ggplot(IntResp, aes(`Barrier`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.6)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+  ylab("Response Percent") +  xlab("")
+
+ggsave("7.1.png", height = 4, width = 8)
+```
+
+```{r}
+ExtBarriers <- df[, 44] %>% 
+  na.omit()
+
+Responses_3 <- list()
+
+for(i in ExtBarriers[[1]]){
+  Bars <- break_list(i)[[1]]
+  for(bar in Bars){
+    if(!(bar %in% names(Responses_3))){
+      Responses_3[[bar]] <- 0
+    }
+    
+    Responses_3[[bar]] <- Responses_3[[bar]] + 1
+  }
+}
+
+ExResp <- data.frame(Barrier = names(Responses_3[-1]), Freq = unlist(Responses_3[-1], use.names=FALSE)) %>% 
+  mutate(`Response Percent` = percent(Freq/nrow(ExtBarriers))) %>% 
+  arrange(desc(`Response Percent`))
+
+#ExResp$Barrier[2] <- "Lack of understanding amongst Council and other Organization staff"
+#ExResp$Barrier[3] <- "Lack of formal economic development plans/mandate"
+```
+
+```{r}
+ExResp$Barrier <- factor(ExResp$Barrier, levels = 
+                                       arrange(ExResp, `Response Percent`)$Barrier)
+
+ggplot(ExResp, aes(`Barrier`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.4)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+  ylab("Response Percent") +  xlab("")
+
+ggsave("7.2.png", height = 4, width = 8)
+```
+
+```{r}
+EDplan <- df[, 46] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Do you have an Economic Development Strategy/Plan?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  arrange(desc(`Response Percent`))
+```
+
+```{r}
+EDplan$`Answer` <- factor(EDplan$`Answer`, levels = 
+                                       arrange(EDplan, `Response Percent`)$`Answer`)
+
+ggplot(EDplan, aes(`Answer`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.6)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+ ylab("Response Percent") +  xlab("")
+
+ggsave("7.3.png", height = 4, width = 8)
+```
+```{r}
+ERplan <- df[, 47] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Do you have an Economic Recovery Strategy/Plan?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  arrange(desc(`Response Percent`))
+```
+
+```{r}
+ERplan$`Answer` <- factor(ERplan$`Answer`, levels = 
+                                       arrange(ERplan, `Response Percent`)$`Answer`)
+
+ggplot(ERplan, aes(`Answer`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.5)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+ ylab("Response Percent") +  xlab("")
+
+ggsave("7.4.png", height = 4, width = 8)
+```
+
+```{r}
+BRE <- df[, 48] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Do you have an ACTIVE Business Retention and Expansion Program?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  arrange(desc(`Response Percent`))
+```
+
+```{r}
+BRE$`Answer` <- factor(BRE$`Answer`, levels = 
+                                       arrange(BRE, `Response Percent`)$`Answer`)
+
+ggplot(BRE, aes(`Answer`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.5)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+ ylab("Response Percent") +  xlab("")
+
+ggsave("7.5.png", height = 4, width = 8)
+```
+
+```{r}
+Restart <- df[, 49] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Did your community develop an “Economic Restart” Plan to prepare for when restrictions were lifted?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`)
+```
+
+```{r}
+Restart$Answer <- factor(Restart$Answer, levels = c("Yes", "No"))
+
+ggplot(Restart, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("7.6.png", height = 4, width = 8)
+```
+
+
+```{r}
+EDPrio <- df[, 50:59] 
+names(EDPrio) <- c("Attract new business", "Attract new residents", "Attract and train workforce", "Improve the local business climate", "Diversification of local economy", 
+"Retain/expand existing businesses", "Create economic resiliency/recovery efforts",
+"Enhance/create regional partnerships", 
+"Create/foster new enterprises", "Productive use of property")
+
+EDPrio <- EDPrio %>% 
+  pivot_longer(cols = names(EDPrio)) %>% 
+  replace_na(list(value = 0)) %>% 
+  mutate(value = as.numeric(value)) %>% 
+  group_by(name) %>% 
+  summarise(AVG = round(mean(value), digits = 2)) %>% 
+  rename(`Average Rating` = AVG,
+         `Goal` = name)
+```
+
+```{r}
+EDPrio$`Goal` <- factor(EDPrio$`Goal`, levels = 
+                                       arrange(EDPrio, `Average Rating`)$`Goal`)
+
+ggplot(EDPrio, aes(`Goal`, `Average Rating`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 30)) +
+  scale_y_continuous(limits = c(0,10)) + theme_bw() + 
+  geom_text(aes(label = `Average Rating`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 11),
+        axis.text.x = element_text(size = 12)) +
+ ylab("Average Rating") +  xlab("")
+
+ggsave("7.7.png", height = 4, width = 8)
+```
+
+```{r}
+Change <- df[, 62] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Have your economic development goals or priorities changed due to the pandemic?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`)
+```
+
+```{r}
+Change$Answer <- factor(Change$Answer, levels = c("Yes", "No"))
+
+ggplot(Change, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("7.8.png", height = 4, width = 8)
+```
+
+```{r}
+EDtraining <- df[, 64] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Has your Council or key economic development stakeholders received economic development training?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  arrange(desc(`Response Percent`))
+```
+
+```{r}
+EDtraining$`Answer` <- factor(EDtraining$`Answer`, levels = 
+                                       arrange(EDtraining, `Response Percent`)$`Answer`)
+
+ggplot(EDtraining, aes(`Answer`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.7)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+ ylab("Response Percent") +  xlab("")
+
+ggsave("7.9.png", height = 4, width = 8)
+```
+
+```{r}
+Collab <- df[, 66] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Do you work with your neighboring communities on economic development and regional initiatives?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`)
+```
+
+```{r}
+Collab$Answer <- factor(Collab$Answer, levels = c("Yes", "No"))
+
+ggplot(Collab, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("7.10.png", height = 4, width = 8)
+```
+
+```{r}
+UsefulInf <- df[, 67] %>% 
+  na.omit()
+
+Responses_4 <- list()
+
+for(i in UsefulInf[[1]]){
+  UseInfs <- break_list(i)[[1]]
+  for(useinf in UseInfs){
+    if(!(useinf %in% names(Responses_4))){
+      Responses_4[[useinf]] <- 0
+    }
+    
+    Responses_4[[useinf]] <- Responses_4[[useinf]] + 1
+  }
+}
+
+UsefulResp <- data.frame(Barrier = names(Responses_4[-1]), Freq = unlist(Responses_4[-1], use.names=FALSE)) %>% 
+  mutate(`Response Percent` = percent(Freq/nrow(UsefulInf))) %>% 
+  arrange(desc(`Response Percent`))
+
+#IntResp$Barrier[2] <- "Lack of understanding amongst Council and other Organization staff"
+#IntResp$Barrier[3] <- "Lack of formal economic development plans/mandate"
+```
+
+```{r}
+UsefulResp$Barrier <- factor(UsefulResp$Barrier, levels = 
+                                       arrange(UsefulResp, `Response Percent`)$Barrier)
+
+ggplot(UsefulResp, aes(`Barrier`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.7)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+  ylab("Response Percent") +  xlab("")
+
+ggsave("7.11.png", height = 4, width = 8)
+```
+
+```{r}
+Charter <- df[, 69] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Does the Community Charter restrict your ability to do Economic Development?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`)
+```
+
+```{r}
+Charter$Answer <- factor(Charter$Answer, levels = c("Yes", "No"))
+
+ggplot(Charter, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("7.12.png", height = 4, width = 8)
+```
+
+```{r}
+MembYears <- df[, 71] %>% 
+  na.omit()
+
+
+AvgYears <- mean(MembYears$`How many years have you been a member of BCEDA?`)
+```
+
+```{r}
+Summit <- df[, 72] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Have you ever attended the BCEDA Annual Summit/Conference?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`)
+```
+
+```{r}
+Summit$Answer <- factor(Summit$Answer, levels = c("Yes", "No"))
+
+ggplot(Summit, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("8.2.png", height = 4, width = 8)
+```
+
+```{r}
+Summit22 <- df[, 73] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `How do you think BCEDA should host the 2022 Economic Summit?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  arrange(desc(`Response Percent`))
+```
+
+```{r}
+Summit22$`Answer` <- factor(Summit22$`Answer`, levels = 
+                                       arrange(Summit22, `Response Percent`)$`Answer`)
+
+ggplot(Summit22, aes(`Answer`, `Response Percent`)) + coord_flip() +
+  geom_col(fill = "#88c543") + 
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 25)) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,.6)) + theme_bw() + 
+  geom_text(aes(label = `Response Percent`), hjust = -0.2, size = 4.5) +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(size = 13),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12)) +
+ ylab("Response Percent") +  xlab("")
+
+ggsave("8.3.png", height = 4, width = 8)
+```
+
+```{r}
+Award <- df[, 74] %>% 
+  group_by_at(1) %>% 
+  rename(`Answer` = `Have you submitted an award nomination in the past?`) %>%
+  filter(!is.na(Answer)) %>% 
+  summarize(`Response Percent` = percent(n()/nrow(.), digits = 1)) %>% 
+  mutate(lab.ypos = cumsum(`Response Percent`) - 0.5*`Response Percent`)
+```
+
+```{r}
+Award$Answer <- factor(Award$Answer, levels = c("Yes", "No"))
+
+ggplot(Award, aes(x="", y=`Response Percent`, fill=Answer))+
+geom_bar(width = 1, stat = "identity") + coord_polar("y", start=0, direction = 1) +
+scale_fill_manual(values=c("#d3e4c0", "#88c543")) +  blank_theme +
+theme(axis.text.x=element_blank()) + geom_text(aes(y = lab.ypos, label = `Response Percent`),
+                                               color = "black", size = 15 /.pt) +
+  theme(legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15),
+        legend.position = "left")
+
+ggsave("8.4.png", height = 4, width = 8)
+```
+
